@@ -4,10 +4,11 @@ const vsSource = `#version 300 es
 in vec3 aColor;
 out vec3 vColor;
 in vec3 aPosition;
-uniform mat4 uProjectionMatrix;
+uniform mat4 uProjectionMatrix_Y;
+uniform mat4 uProjectionMatrix_Z;
 
 void main() {
-    gl_Position = uProjectionMatrix * vec4(aPosition, 1.0);
+    gl_Position = uProjectionMatrix_Z * uProjectionMatrix_Y * vec4(aPosition, 1.0);
     vColor = aColor;
 }`;
 
@@ -57,7 +58,8 @@ function main() {
 
     const aColor = gl.getAttribLocation(program,'aColor');
     const aPosition = gl.getAttribLocation(program, 'aPosition');
-    const uProjectionMatrix = gl.getUniformLocation(program,'uProjectionMatrix');
+    const uProjectionMatrix_Y = gl.getUniformLocation(program,'uProjectionMatrix_Y');
+    const uProjectionMatrix_Z = gl.getUniformLocation(program,'uProjectionMatrix_Z');
 
     const bufferData = new Float32Array([
      -.5,-.5,-.5,   0,1,1,
@@ -123,15 +125,23 @@ function main() {
         const radian = Math.PI * angle / 180;
         const cos = Math.cos(radian);
         const sin = Math.sin(radian);
+
+        const projectionMatrix_Z = new Float32Array([
+            1,0,0,0,
+            0,cos,sin,0,
+            0,-sin,cos,0,
+            0,0,0,1,
+        ]);
     
-        const projectionMatrix = new Float32Array([
+        const projectionMatrix_Y = new Float32Array([
             cos,0,-sin,0,
             0,1,0,0,
             sin,0,cos,0,
             0,0,0,1,
         ]);
     
-        gl.uniformMatrix4fv(uProjectionMatrix, false, projectionMatrix);
+        gl.uniformMatrix4fv(uProjectionMatrix_Y, false, projectionMatrix_Y);
+        gl.uniformMatrix4fv(uProjectionMatrix_Z, false, projectionMatrix_Z);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
         requestAnimationFrame(draw);
     };

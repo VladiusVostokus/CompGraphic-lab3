@@ -47,8 +47,6 @@ function main() {
         console.log(gl.getShaderInfoLog(fsShader));
     }
 
-    gl.clearColor(0.5, 0.2, 0.6, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
     gl.enable(gl.CULL_FACE);
     gl.enable(gl.DEPTH_TEST);
 
@@ -119,7 +117,7 @@ function main() {
 
     const draw = () => {
         gl.clearColor(0.5, 0.2, 0.6, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         if (angle === 360.0) angle = 0.0;
         angle++;
         const radian = Math.PI * angle / 180;

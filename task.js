@@ -4,9 +4,10 @@ const vsSource = `#version 300 es
 in vec3 aColor;
 out vec3 vColor;
 in vec3 aPosition;
+uniform mat4 uProjectionMatrix;
 
 void main() {
-    gl_Position = vec4(aPosition, 1.0);
+    gl_Position = uProjectionMatrix * vec4(aPosition, 1.0);
     vColor = aColor;
 }`;
 
@@ -48,6 +49,8 @@ function main() {
 
     gl.clearColor(0.5, 0.2, 0.6, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.enable(gl.CULL_FACE);
+    gl.enable(gl.DEPTH_TEST);
 
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
@@ -56,6 +59,7 @@ function main() {
 
     const aColor = gl.getAttribLocation(program,'aColor');
     const aPosition = gl.getAttribLocation(program, 'aPosition');
+    const uProjectionMatrix = gl.getUniformLocation(program,'uProjectionMatrix');
 
     const bufferData = new Float32Array([
      -.5,-.5,-.5,   0,1,1,
@@ -111,5 +115,27 @@ function main() {
     gl.enableVertexAttribArray(aPosition);
     gl.enableVertexAttribArray(aColor);
 
-    gl.drawArrays(gl.TRIANGLES, 0, 36);
+    let angle = 0.0;
+
+    const draw = () => {
+        gl.clearColor(0.5, 0.2, 0.6, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        if (angle === 360.0) angle = 0.0;
+        angle++;
+        const radian = Math.PI * angle / 180;
+        const cos = Math.cos(radian);
+        const sin = Math.sin(radian);
+    
+        const projectionMatrix = new Float32Array([
+            cos,0,-sin,0,
+            0,1,0,0,
+            sin,0,cos,0,
+            0,0,0,1,
+        ]);
+    
+        gl.uniformMatrix4fv(uProjectionMatrix, false, projectionMatrix);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
+        requestAnimationFrame(draw);
+    };
+    draw();
 }

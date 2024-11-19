@@ -6,9 +6,11 @@ out vec3 vColor;
 in vec3 aPosition;
 uniform mat4 uProjectionMatrix_Y;
 uniform mat4 uProjectionMatrix_Z;
+uniform mat4 uPerspectiveMatrix;
+uniform mat4 uModelViewMatrix;
 
 void main() {
-    gl_Position = uProjectionMatrix_Z * uProjectionMatrix_Y * vec4(aPosition, 1.0);
+    gl_Position = uPerspectiveMatrix * (uModelViewMatrix * uProjectionMatrix_Y * uProjectionMatrix_Z * vec4(aPosition, 1.0));
     vColor = aColor;
 }`;
 
@@ -60,49 +62,51 @@ function main() {
     const aPosition = gl.getAttribLocation(program, 'aPosition');
     const uProjectionMatrix_Y = gl.getUniformLocation(program,'uProjectionMatrix_Y');
     const uProjectionMatrix_Z = gl.getUniformLocation(program,'uProjectionMatrix_Z');
+    const uPerspectiveMatrix = gl.getUniformLocation(program,"uPerspectiveMatrix");
+    const uModelViewMatrix = gl.getUniformLocation(program, "uModelViewMatrix");
 
     const bufferData = new Float32Array([
-     -.5,-.5,-.5,   0,1,1,
-    -.5, .5, .5,   0,1,1,
-    -.5, .5,-.5,   0,1,1,
-    -.5,-.5, .5,   0,1,1,
-    -.5, .5, .5,   0,1,1,
-    -.5,-.5,-.5,   0,1,1,
-
-    .5 ,-.5,-.5,   1,0,1,
-    .5 , .5,-.5,   1,0,1,
-    .5 , .5, .5,   1,0,1,
-    .5 , .5, .5,   1,0,1,
-    .5 ,-.5, .5,   1,0,1,
-    .5 ,-.5,-.5,   1,0,1,
-
-    -.5,-.5,-.5,   0,1,0,
-     .5,-.5,-.5,   0,1,0,
-     .5,-.5, .5,   0,1,0,
-     .5,-.5, .5,   0,1,0,
-    -.5,-.5, .5,   0,1,0,
-    -.5,-.5,-.5,   0,1,0,
-
-    -.5, .5,-.5,   1,1,0,
-     .5, .5, .5,   1,1,0,
-     .5, .5,-.5,   1,1,0,
-    -.5, .5, .5,   1,1,0,
-     .5, .5, .5,   1,1,0,
-    -.5, .5,-.5,   1,1,0,
-
-     .5,-.5,-.5,   0,0,1,
-    -.5,-.5,-.5,   0,0,1,
-     .5, .5,-.5,   0,0,1,
-    -.5, .5,-.5,   0,0,1,
-     .5, .5,-.5,   0,0,1,
-    -.5,-.5,-.5,   0,0,1,
-
-    -.5,-.5, .5,   1,0,0,
-     .5,-.5, .5,   1,0,0,
-     .5, .5, .5,   1,0,0,
-     .5, .5, .5,   1,0,0,
-    -.5, .5, .5,   1,0,0,
-    -.5,-.5, .5,   1,0,0,
+        -.5,-.5,-.5,   0,1,1,
+        -.5, .5, .5,   0,1,1,
+        -.5, .5,-.5,   0,1,1,
+        -.5,-.5, .5,   0,1,1,
+        -.5, .5, .5,   0,1,1,
+        -.5,-.5,-.5,   0,1,1,
+    
+        .5 ,-.5,-.5,   1,0,1,
+        .5 , .5,-.5,   1,0,1,
+        .5 , .5, .5,   1,0,1,
+        .5 , .5, .5,   1,0,1,
+        .5 ,-.5, .5,   1,0,1,
+        .5 ,-.5,-.5,   1,0,1,
+    
+        -.5,-.5,-.5,   0,1,0,
+         .5,-.5,-.5,   0,1,0,
+         .5,-.5, .5,   0,1,0,
+         .5,-.5, .5,   0,1,0,
+        -.5,-.5, .5,   0,1,0,
+        -.5,-.5,-.5,   0,1,0,
+    
+        -.5, .5,-.5,   1,1,0,
+         .5, .5, .5,   1,1,0,
+         .5, .5,-.5,   1,1,0,
+        -.5, .5, .5,   1,1,0,
+         .5, .5, .5,   1,1,0,
+        -.5, .5,-.5,   1,1,0,
+    
+         .5,-.5,-.5,   0,0,1,
+        -.5,-.5,-.5,   0,0,1,
+         .5, .5,-.5,   0,0,1,
+        -.5, .5,-.5,   0,0,1,
+         .5, .5,-.5,   0,0,1,
+        -.5,-.5,-.5,   0,0,1,
+    
+        -.5,-.5, .5,   1,0,0,
+         .5,-.5, .5,   1,0,0,
+         .5, .5, .5,   1,0,0,
+         .5, .5, .5,   1,0,0,
+        -.5, .5, .5,   1,0,0,
+        -.5,-.5, .5,   1,0,0,
     ]);
     const buffer = gl.createBuffer();
 
@@ -114,6 +118,36 @@ function main() {
 
     gl.enableVertexAttribArray(aPosition);
     gl.enableVertexAttribArray(aColor);
+    
+    const fovY = Math.PI / 4;
+    const aspectRatio = canvas.width / canvas.height
+
+    function perspective(fovy, aspect, near, far) {
+        var f = Math.tan(Math.PI * 0.5 - 0.5 * fovy);
+        var rangeInv = 1.0 / (near - far);
+
+        return [
+            f / aspect, 0, 0, 0,
+            0, f, 0, 0,
+            0, 0, (near + far) * rangeInv, -1,
+            0, 0, near * far * rangeInv * 2, 0
+        ];
+    };
+
+    function translate(translationVec) {
+        let x = translationVec[0], y = translationVec[1], z = translationVec[2];
+        const matrix = [
+            1,0,0,0,
+            0,1,0,0,
+            0,0,1,0,
+            0,0,0,1,
+        ]
+        matrix[12] = matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12];
+        matrix[13] = matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13];
+        matrix[14] = matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14];
+        matrix[15] = matrix[3] * x + matrix[7] * y + matrix[11] * z + matrix[15];
+        return matrix;
+    }
 
     let angle = 0.0;
 
@@ -126,22 +160,28 @@ function main() {
         const cos = Math.cos(radian);
         const sin = Math.sin(radian);
 
+        const modelViewMatrix = translate([0, 0, -3]);
+        const perspectiveMatrix = perspective(fovY, aspectRatio, 0.1, 10);
+
+        const projectionMatrix_Y = [
+            cos,0,-sin,0,
+            0,1,0,0,
+            sin,0,cos,0,
+            0,0,0,1,
+        ];
+
         const projectionMatrix_Z = new Float32Array([
             1,0,0,0,
             0,cos,sin,0,
             0,-sin,cos,0,
             0,0,0,1,
         ]);
-    
-        const projectionMatrix_Y = new Float32Array([
-            cos,0,-sin,0,
-            0,1,0,0,
-            sin,0,cos,0,
-            0,0,0,1,
-        ]);
+        
     
         gl.uniformMatrix4fv(uProjectionMatrix_Y, false, projectionMatrix_Y);
         gl.uniformMatrix4fv(uProjectionMatrix_Z, false, projectionMatrix_Z);
+        gl.uniformMatrix4fv(uPerspectiveMatrix, false, perspectiveMatrix);
+        gl.uniformMatrix4fv(uModelViewMatrix, false, modelViewMatrix)
         gl.drawArrays(gl.TRIANGLES, 0, 36);
         requestAnimationFrame(draw);
     };

@@ -122,7 +122,7 @@ function main() {
     const fovY = Math.PI / 4;
     const aspectRatio = canvas.width / canvas.height
 
-    function perspective(fovy, aspect, near, far) {
+    const perspective = (fovy, aspect, near, far) => {
         var f = Math.tan(Math.PI * 0.5 - 0.5 * fovy);
         var rangeInv = 1.0 / (near - far);
 
@@ -134,7 +134,7 @@ function main() {
         ];
     };
 
-    function translate(translationVec) {
+    const translate = (translationVec) => {
         let x = translationVec[0], y = translationVec[1], z = translationVec[2];
         const matrix = [
             1,0,0,0,
